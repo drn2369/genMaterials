@@ -19,7 +19,9 @@
 #define		EXTRACTOR_H
 
 #include	<string>
+#include	<cv.h>
 
+#include	"points.h"
 #include	"patch.h"
 #include	"ortho.h"
 
@@ -34,10 +36,11 @@ class Extractor
 {
 	public:
 		/* ====================  LIFECYCLE     ======================================= */
+		Extractor ();
 		Extractor (Patch *ptch,string dataType, string combType, string baseImLoc );                             /* constructor */
 		~Extractor();
 		/* ====================  ACCESSORS     ======================================= */
-		
+		vector<vector<float> > getValues(){return values;}	
 		/* ====================  MUTATORS      ======================================= */
 		void setPatch(Patch *pc){patchP = pc;}
 		void setDataType(string dT){dataType = dT;}
@@ -56,6 +59,9 @@ class Extractor
 		void loadMaps();
 		void loadOrthos();
 		void extractValues();
+		void extractValues(MapOrtho, HyperOrtho, Points, cv::Mat);
+
+		vector<float> spectralProfile(HyperOrtho, cv::Point2d);
 		float interpValue(Ortho* orthoI, cv::Point2d pt, string interpType);
 		vector<float> combineValues();
 

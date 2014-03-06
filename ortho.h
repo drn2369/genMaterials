@@ -20,6 +20,8 @@
 
 #include	<string>
 
+#include	<gdal.h>
+#include	<gdal_priv.h>
 #include	<cv.h>
 
 using namespace std;
@@ -91,4 +93,37 @@ class MapOrtho : public Ortho{
 	private:
 	     cv::Mat image2;
 }; /* -----  end of class MapOrthos  ----- */
+
+
+/*
+ * =====================================================================================
+ *        Class:  HyperOrtho
+ *  Description:  HyperOrtho subclass
+ * =====================================================================================
+ */
+class HyperOrtho : public Ortho{
+	public:
+		/* ====================  LIFECYCLE     ======================================= */
+		HyperOrtho (string dataT, string imageL);                       /* constructor */
+
+		/* ====================  ACCESSORS     ======================================= */
+		int getNCols();
+		int getNRows();
+		int getNBands();
+		/* ====================  MUTATORS      ======================================= */
+
+		/* ====================  OPERATORS     ======================================= */
+		float returnBandPix(int i, int x, int y);
+
+		// Overdefine readImage
+		using Ortho::readImage;
+		void readImage();
+		/* ====================  DATA MEMBERS  ======================================= */
+	protected:
+
+	private:
+		GDALDataset* dataset;		
+}; /* -----  end of class HyperOrtho  ----- */
+
+
 #endif

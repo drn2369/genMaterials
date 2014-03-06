@@ -19,7 +19,6 @@
 #include	<vector>
 #include	<utility>
 
-#include	<gdal.h>
 #include	<highgui.h>
 
 #include	"ortho.h"
@@ -30,6 +29,8 @@ Ortho::Ortho(string dataT, string imageL){
 }
 
 MapOrtho::MapOrtho(string dataT, string imageL):Ortho(dataT,imageL){}  
+
+HyperOrtho::HyperOrtho(string dataT, string imageL):Ortho(dataT,imageL){}
 
 void Ortho::readImage(){
 
@@ -64,6 +65,23 @@ void MapOrtho::readImage(){
 	//Extract Forawrd and Reverse Transforms
 	GDALGetGeoTransform(hDataset,forwardGeoTrans);
 	GDALInvGeoTransform(forwardGeoTrans, reverseGeoTrans);
+}
+
+void HyperOrtho::readImage(){
+	
+	string imLoc = this->getImageLoc();
+
+	//Read in images
+	GDALAllRegister();
+	GDALDataset *poDataset;
+
+	poDataset = (GDALDataset *) GDALOpen(imLoc.c_str(), GA_ReadOnly);
+
+	//Extract Forward and Reverse Transforms
+	GDALGetGeoTransform(poDataset,forwardGeoTrans);
+	GDALInvGeoTransform(forwardGeoTrans, reverseGeoTrans);
+
+	dataset = poDataset;
 }
 
 cv::Point2d Ortho::intrinsicToGeographic(double x, double y){
@@ -127,6 +145,11 @@ cv::Point2d MapOrtho::findGeo(double x, double y){
 	int breakLoop=1;
 
 	float* p;
+
+	//Boundry checking
+	if( xM < 0 || xM > nCols || yM < 0 || yM > nRows){
+		throw 1;
+	}
 
 	//Search through image for first instance of value
 	for( i=0; i < nRows && breakLoop; ++i){
@@ -727,3 +750,32 @@ cv::Point2d MapOrtho::findGeo(double x, double y){
 	//i = row = y, j = col = x
 	return this->intrinsicToGeographic(jMatch, iMatch);
 }
+
+
+float HyperOrtho::returnBandPix(int i, int x, int y){
+
+	//Get Band
+	GDALRasterBand *poBand;
+	poBand = dataset->GetRasterBand(i);
+
+	//Get Pixel
+	float *pafPix;
+	pafPix = (float *) CPLMalloc(sizeof(float));
+	poBand->RasterIO(GF_Read,x,y,1,1,pafPix,1,1,GDT_Float32,0,0);
+
+	return *pafPix;
+}
+
+int HyperOrtho::getNCols(){
+	return dataset->GetRasterXSize();
+}
+
+
+int HyperOrtho::getNRows(){
+	return dataset->GetRasterYSize();
+}
+
+int HyperOrtho::getNBands(){
+	return dataset->GetRasterCount();
+}
+

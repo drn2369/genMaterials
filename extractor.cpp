@@ -20,6 +20,9 @@
 #include	<fstream>
 
 #include	"extractor.h"
+#include	"points.h"
+
+Extractor::Extractor(){}
 
 Extractor::Extractor(Patch *ptch, string dataType, string combType, string baseImLoc){
 	setPatch(ptch);
@@ -228,6 +231,53 @@ void Extractor::extractValues(){
 	}
 	values.push_back(valueV);
     }
+}
+
+void Extractor::extractValues(MapOrtho orthoMap, HyperOrtho ortho, Points pts,  cv::Mat cam){
+
+	vector< cv::Point2d > imPts = pts.projectPoints(cam);
+
+	vector< cv::Point2d >::iterator it;
+	for(it = imPts.begin(); it != imPts.end(); ++it){
+		//Use Map to find ortho location
+	    try{
+		cv::Point2d orthoPt = orthoMap.findGeo(it->x,it->y);
+		vector<float> prof = spectralProfile(ortho, orthoPt);
+		values.push_back(prof);
+	    }catch(int e){ // if caught, fill profile with 0s
+		vector<float> profile;
+		profile.resize(ortho.getNBands());
+		fill(profile.begin(),profile.end(),0);
+		values.push_back(profile);
+		continue;
+	    }
+	}
+}
+
+vector<float> Extractor::spectralProfile(HyperOrtho ortho, cv::Point2d pt){
+
+	vector<float> profile;
+
+	cv::Point2d ptN = ortho.geographicToIntrinsic(pt);
+
+	int xP = static_cast<int>(ptN.x+0.5);
+	int yP = static_cast<int>(ptN.y+0.5);
+
+	//Enforce boundry
+	int nCols = ortho.getNCols();
+	int nRows = ortho.getNRows();
+	int bands = ortho.getNBands();
+
+	if( xP < 0 || xP > nCols || yP < 0 || yP > nRows){
+		profile.resize(bands);
+		fill(profile.begin(),profile.end(),0);
+	}else{
+		for(int i=1; i<bands+1; i++){
+			float value = ortho.returnBandPix(i,xP,yP);
+			profile.push_back(value);
+		}
+	}
+	return profile;
 }
 
 float Extractor::interpValue(Ortho* orthoI, cv::Point2d pt, string interpType){
